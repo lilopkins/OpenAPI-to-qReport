@@ -13,4 +13,10 @@ object LocalImplicits {
       if self == null then alternative
       else                 self.doubleValue()
   }
+
+  implicit class RichInteger(self: Integer) {
+    def orInt(alternative: Int): Int =
+      if self == null then alternative
+      else                 self.intValue()
+  }
 }

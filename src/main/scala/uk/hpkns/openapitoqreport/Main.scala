@@ -44,9 +44,20 @@ object Main {
         log.warn("  {}", item)
     
     val vars = new mutable.ListBuffer[Variable]
+    
+    // Variables from parameters
     for (id, parameter) <- model.getParameters().asScala do
       val variable = Variable(parameter.getName(), parameter.getRequired(), parameter.getSchema())
       vars += variable
+
+    // Variables from body
+    for
+      (path, pathSchema) <- model.getPaths().asScala
+      (method, methodSchema) <- pathSchema.getOperations().asScala
+      (mediaType, content) <- methodSchema.getRequestBody().getContentMediaTypes().asScala
+    do
+      vars ++= Variable.process("body", methodSchema.getRequestBody().getRequired(), content.getSchema())
+
     log.info("{} varying parameters detected.", vars.size)
     
     val tests = new mutable.ListBuffer[Test]
