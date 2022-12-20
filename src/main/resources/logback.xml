@@ -1,0 +1,16 @@
+<configuration>
+    <!-- Console appender -->
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            # Pattern of log message for file appender
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %lo{20} %-5p %m%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Override log level for specified package -->
+    <logger name="uk.hpkns" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="stdout" />
+    </root>
+</configuration>
