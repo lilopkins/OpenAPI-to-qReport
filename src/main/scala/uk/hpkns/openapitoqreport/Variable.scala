@@ -1,9 +1,11 @@
 package uk.hpkns.openapitoqreport
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import com.reprezen.kaizen.oasparser.model3.Schema
 import uk.hpkns.openapitoqreport.LocalImplicits._
 import org.slf4j.LoggerFactory
+import com.reprezen.kaizen.oasparser.model3.MediaType
 
 class Variable(val name: String, val required: Boolean, val schema: Schema) {
   private def log = LoggerFactory.getLogger(getClass)
@@ -12,7 +14,8 @@ class Variable(val name: String, val required: Boolean, val schema: Schema) {
     schema.getType() match
       case "string" =>
         if schema.hasEnums() then schema.getEnum(0).asInstanceOf[String]
-        else                      FakeSource.fakeValuesService.regexify(schema.getPattern().clearRegexTrash)
+        else if schema.getPattern() != null then FakeSource.fakeValuesService.regexify(schema.getPattern().clearRegexTrash)
+        else FakeSource.fakeValuesService.bothify("?????###")
       case "boolean" => "true"
       case "number" =>
         val x = FakeSource.random.between(schema.getMinimum().orDouble(0), schema.getMaximum().orDouble(100))
@@ -48,4 +51,17 @@ class Variable(val name: String, val required: Boolean, val schema: Schema) {
   def enumTests: List[Test] =
     if schema.hasEnums() then (Test("%s invalid option".format(name), TestOutcome.Failure) <-- (name, "ThisIsAnInvalidEnumOption")) :: Nil
     else                      Nil
+}
+
+object Variable {
+  def process(name: String, required: Boolean, schema: Schema): Iterable[Variable] =
+    schema.getType() match
+      case "object" =>
+        val required = schema.getRequiredFields().asScala
+        for
+          (prop, propSchema) <- schema.getProperties().asScala
+          variable <- process("%s-%s".format(name, prop), required.contains(prop), propSchema)
+        yield variable
+      case "array" => Variable("%s-element".format(name), schema.getMaxLength().orInt(0) != 0, schema.getItemsSchema()) :: Nil
+      case _ => Variable(name, required, schema) :: Nil
 }
